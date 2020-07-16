@@ -74,15 +74,7 @@ def get_centroids(clusters):
 
 
 centroids = centroids_init(points, K)
-clusters = get_clusters(centroids, points)
 
-centroids_2 = get_centroids(clusters)
-
-for i in range(K):
-    plot_points(clusters[i], coloring[i])
-plot_points(centroids_2, green)
-plt.show()
-'''
 for _ in range(count):
     clusters = get_clusters(centroids, points)
     centroids = get_centroids(clusters)
@@ -90,5 +82,5 @@ for _ in range(count):
 # we are done the algorithm
 for i in range(K):
     plot_points(clusters[i], coloring[i])
+plot_points(centroids, green)
 plt.show()
-'''
