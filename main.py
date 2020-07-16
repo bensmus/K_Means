@@ -14,46 +14,59 @@ coloring = [red, blue]  # because we have two different color clusters
 count = 10  # number of times we get new centroids and associate clusters
 
 points = np.random.rand(N, 2)
-'''
-[
-    [88, 2],
-    [7, 27]
-    [35, 6]...
-]
-'''
-'''
-x = points[:, 0]
-y = points[:, 1]
-plt.scatter(x, y)
-'''
+
+
 def plot_points(points, color):
     '''Arg points is a mx2 array, color is hex string'''
     x = points[:, 0]
     y = points[:, 1]
     plt.scatter(x, y, c=color)
 
-''' WORKS
-plot_points(points[:4], red)
-plot_points(points[4:], blue)
-plt.show()
-'''
-
 
 def centroids_init(points, K):
     '''Choose K random points to be the initial centroids (around which to cluster).'''
     
-    centroids = np.array([random.choice(points) for _ in range(K)])
+    centroids = [list(random.choice(points)) for _ in range(K)]
     return centroids  # list with K points
 
 
+def find_closest_centroid(centroids, point):
+    '''returns [x, y]: the coors of closest centroid in centroids'''
+
+    distances = []
+    for centroid in centroids:
+        distances.append(np.linalg.norm(np.array(centroid) - np.array(point)))
+    min_index = distances.index(min(distances))
+    
+    return centroids[min_index]
+
+
+def get_clusters(centroids, points):
+    '''returns an array of clusters (3D array)'''
+    
+    clusters = [[] for _ in centroids]
+    for point in points:
+        print(centroids, clusters)
+        # deciding which cluster to assign to 
+        centroid = find_closest_centroid(centroids, point)
+        cluster = clusters[centroids.index(centroid)]
+        cluster.append(point)
+    
+    return clusters
+
+    
 centroids = centroids_init(points, K)
-
-
+clusters = get_clusters(centroids, points)
+for i in range(K):
+    plot_points(np.array(clusters[i]), coloring[i])
+plt.show()
+'''
 for _ in range(count):
     clusters = get_clusters(centroids, points)
     centroids = get_centroids(clusters)
 
 # we are done the algorithm
-for index, cluster in enumerate(clusters):
-    plot_points(cluster, coloring[index])
+for i in range(K):
+    plot_points(clusters[i], coloring[i])
 plt.show()
+'''
