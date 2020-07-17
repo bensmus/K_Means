@@ -1,34 +1,52 @@
 import numpy as np
 import random
-import matplotlib.pyplot as plt
+import sys
+import pygame
+import pygame.freetype
+import colorsys
+#pylint: disable=no-member
+pygame.init()
+
+
+def spread_colors(count):
+    '''
+    Count is the amount of random colors we want to generate.
+    Colorsys gives rgb as float between 0 and 1. Pygame supports 8 bit color (255^3) possibilities.
+    Generate a 2D list of spaced RGB colors.
+    '''
+    change = 1/count  # if we have less groups, we need more different hues
+    huelist = [(i * change) for i in range(count)]
+    rgb = [colorsys.hsv_to_rgb(hue, 1, 1) for hue in huelist]  
+
+    for i, color in enumerate(rgb):
+        rgb[i] = list(map(lambda x: int(x*255), color))
+
+    return rgb
+
+
+size = 640, 480
+screen = pygame.display.set_mode(size)
+overlay = screen.copy()
+clock = pygame.time.Clock()
+font = pygame.freetype.SysFont('Comic Sans MS', 24)
+
+white = 255, 255, 255
+black = 0, 0, 0
 
 # K-Means clustering algorithm
 # https://stanford.edu/~cpiech/cs221/handouts/kmeans.html
 
-N = 30  # number of points 
-K = 2  # number of clusters
-red = '#fc0303'
-green = '#0bfc03'
-blue = '#030bfc'
-coloring = [red, blue]  # because we have two different color clusters
-count = 10  # number of times we get new centroids and associate clusters
+N = int(sys.argv[1])  # number of points as a command line argument
+K = int(sys.argv[2])  # number of clusters as a command line argument
+colors = spread_colors(K + 1)  # different colors, K for clusters, first one for centroids 
+centroid_color = colors[0]
+clusters_colors = colors[1:]
 
 points = np.random.rand(N, 2)
-
-
-def plot_points(points, color):
-    '''Arg points is a mx2 array, color is hex string'''
-    x = points[:, 0]
-    y = points[:, 1]
-    plt.scatter(x, y, c=color)
-
-
-def centroids_init(points, K):
-    '''Choose K random points to be the initial centroids (around which to cluster).'''
+# we need to get these to a pixelable value
+points *= 400  # max pixel value 400
+points += 10  # getting a safe margin
     
-    centroids = np.array([random.choice(points) for _ in range(K)])
-    return centroids  # np.array with K points
-
 
 def find_closest_centroid(centroids, point):
     '''returns [x, y]: the coors of closest centroid in centroids'''
@@ -73,14 +91,50 @@ def get_centroids(clusters):
     return np.array(centroids)
 
 
-centroids = centroids_init(points, K)
+def draw_clusters_and_centroids(clusters, centroids, clusters_colors, centroid_color):
+    '''Draws points to screen. Expects iterable for clusters_colors.'''
 
-for _ in range(count):
-    clusters = get_clusters(centroids, points)
-    centroids = get_centroids(clusters)
+    for i, cluster in enumerate(clusters.values()):
+        for point in cluster:
+            pygame.draw.circle(screen, clusters_colors[i], list(map(int, list(point))), 5)
+    
+    for centroid in centroids:
+        pygame.draw.circle(screen, centroid_color, list(map(int, list(centroid))), 5)
 
-# we are done the algorithm
-for i in range(K):
-    plot_points(clusters[i], coloring[i])
-plot_points(centroids, green)
-plt.show()
+
+centroids = np.random.rand(K, 2)
+print(centroids)
+
+time = 0
+space_count = 0
+update_time = 1000
+paused = False  # allowing pause
+while True:
+    dt = clock.tick(60)
+
+    if not paused:
+        time += dt
+    
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            sys.exit()
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE:
+                space_count += 1
+   
+    if space_count % 2 == 1:
+        paused = True
+    else:
+        paused = False
+    
+    if time > update_time:  # every 1000 milliseconds
+        update_time += 1000
+        screen.fill(white)
+        
+        # K Means!
+        clusters = get_clusters(centroids, points)
+        centroids = get_centroids(clusters)
+        draw_clusters_and_centroids(clusters, centroids, clusters_colors, centroid_color)     
+        pygame.display.flip()
+
+
